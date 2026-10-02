@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>MemeScanner — Live Memecoin Launches</title>
+  <meta name="description" content="Track new, bonding and graduated memecoins across launchpads.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">M<span>Ξ</span></div>
+    <div><strong>MEMESCANNER</strong><small>.FUN</small></div>
+  </div>
+  <div class="live"><i></i> LIVE</div>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <div class="eyebrow">SOLANA MEMECOIN INTELLIGENCE</div>
+    <h1>Find new coins<br><span>before they move.</span></h1>
+    <p>Watch new launches, bonding curves and graduated coins in one live feed.</p>
+    <div class="search">
+      <input id="search" placeholder="Search ticker, token or contract address…" autocomplete="off">
+      <button id="searchBtn">Search</button>
+    </div>
+  </section>
+
+  <section class="wrap stats">
+    <div><b id="newCount">—</b><span>New launches</span></div>
+    <div><b id="bondCount">—</b><span>Bonding</span></div>
+    <div><b id="gradCount">—</b><span>Graduated</span></div>
+    <div><b id="updated">—</b><span>Last update</span></div>
+  </section>
+
+  <section class="wrap tabs">
+    <button class="tab active" data-filter="all">All</button>
+    <button class="tab" data-filter="new">New</button>
+    <button class="tab" data-filter="bonding">Bonding</button>
+    <button class="tab" data-filter="graduated">Graduated</button>
+  </section>
+
+  <section class="wrap feed" id="feed">
+    <div class="section-head">
+      <div><h2>Live launches</h2><span id="source">Connecting to scanner…</span></div>
+      <button id="refresh" class="refresh">↻ Refresh</button>
+    </div>
+    <div id="cards" class="cards"></div>
+  </section>
+</main>
+
+<footer class="wrap footer">
+  <div><strong>MEMESCANNER.FUN</strong><span>On-chain information interface. Verify token addresses before acting.</span></div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
