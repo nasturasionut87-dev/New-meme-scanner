@@ -1,63 +1,91 @@
-# MemeScanner — New Repository
+# MemeScanner.FUN — Stage 1
 
-A fresh rebuild of MemeScanner.FUN focused on live memecoin discovery.
+Stage 1 adds the first **live launch detectors** while keeping the existing GitHub Pages frontend.
 
-## Frontend
-- `index.html`
-- `styles.css`
-- `app.js`
+## Live sources
 
-The frontend has three core states:
-- New
-- Bonding
-- Graduated
+### Pump.fun — Solana
+- Watches the official Pump program on Solana.
+- Detects the on-chain `create` / `createV2` launch event.
+- Reads the token name, symbol, mint, creator and bonding curve from the event.
+- Reads the bonding-curve account to classify **New / Bonding / Graduated**.
+- Uses the official Pump program ID documented by Pump.
 
-It refreshes the launch API every 15 seconds.
+### PONS V2 — Robinhood Chain
+- Watches the verified PONS V2 factory.
+- Detects `TokenLaunched` and `PoolGraduated`.
+- Reads ERC-20 name/symbol directly from the token contract.
+- Uses Robinhood Chain RPC and verified PONS factory/event addresses.
 
-## Backend
-- `worker.js`
+## Files
 
-Deploy `worker.js` as a Cloudflare Worker. Then replace the API URL in `app.js`:
+- `index.html` — frontend
+- `styles.css` — frontend styling
+- `app.js` — frontend logic
+- `worker.js` — Stage 1 live API/scanner
+- `wrangler.toml` — Cloudflare Worker deployment config
+- `.github/workflows/deploy-worker.yml` — deploy Worker automatically from GitHub
 
-`https://YOUR-MEMESCANNER-WORKER.workers.dev/api/launches`
+## GitHub + Cloudflare deployment
 
-The Worker is intentionally provider-neutral. Set `LAUNCH_INDEXER_URL` to a trusted launch-indexer endpoint returning:
+The website can stay on GitHub Pages. The API runs on the existing `sionut87.workers.dev` Worker.
 
-```json
-{
-  "items": [
-    {
-      "name": "Example",
-      "symbol": "EX",
-      "launchpad": "Pump.fun",
-      "chain": "Solana",
-      "status": "new",
-      "createdAt": "2026-10-02T09:00:00Z",
-      "marketCap": 12000,
-      "liquidity": 6000,
-      "volume24h": 25000,
-      "bondingProgress": 22,
-      "address": "TOKEN_ADDRESS"
-    }
-  ]
-}
-```
+To deploy the Worker from GitHub without editing Cloudflare code manually, add these GitHub repository secrets:
 
-## Roadmap
-1. Pump.fun live adapter
-2. Raydium LaunchLab adapter
-3. LetsBONK adapter
-4. Bags / Believe / Moonshot adapters
-5. Base / BNB / TRON adapters
-6. Search/detail pages
-7. WebSocket/SSE live updates
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
 
-Keep API keys and RPC credentials in Worker secrets, never in the frontend.
+Then every push to `main` deploys `worker.js` automatically.
 
-Pump.fun currently supports coin launches on Solana and has a documented graduation path to PumpSwap; its current documentation also lists SOL and USDC as launch pair assets. Verify protocol details when implementing each adapter.
+The frontend already points to:
 
-### Contract address (CA)
-Every launch card displays the token contract address in shortened form with a Copy button. The full CA remains in the data model and is used for the explorer link.
+`https://sionut87.workers.dev/api/launches`
 
-### Buy buttons
-For Solana tokens, each card now includes direct **Buy on Pump.fun** and **Buy on FOMO** buttons. Pump.fun uses its `explore?outputCurrency=<CA>` route; FOMO uses its Solana token route `fomo.family/tokens/solana/<CA>`.
+## Optional environment variables
+
+Cloudflare Worker variables can override the public RPCs and scanner limits:
+
+- `SOLANA_RPC_URL`
+- `ROBINHOOD_RPC_URL`
+- `PUMP_TX_LIMIT`
+- `PONS_LOOKBACK_BLOCKS`
+
+Public RPCs are suitable for Stage 1 testing but should eventually be replaced with dedicated RPC capacity for production reliability.
+
+## Stage plan
+
+### Stage 1 — Live detection
+- Pump.fun detector
+- PONS detector
+- New / Bonding / Graduated classification
+- CA, creator, transaction and launchpad data
+
+### Stage 2 — Enrichment
+- SOL/ETH prices
+- Market cap
+- Liquidity
+- Volume
+- Images/socials
+- Accurate bonding percentage for both launchpads
+
+### Stage 3 — Live stream
+- Persistent state
+- WebSocket/SSE or durable event cursor
+- Faster updates without rescanning large windows
+
+### Stage 4 — More launchpads
+- Raydium LaunchLab
+- LetsBONK
+- Bags
+- Believe
+- Moonshot
+
+### Stage 5 — More chains
+- Base
+- BNB Chain
+- TRON
+- Additional EVM launchpads
+
+## Safety
+
+The scanner is read-only. It does not hold private keys and does not sign or submit trades. Buy buttons continue to open the relevant external trading pages.

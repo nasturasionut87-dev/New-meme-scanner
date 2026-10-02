@@ -1,61 +1,306 @@
-// MemeScanner.FUN — single-file Cloudflare Worker deployment
-// This version serves the frontend AND /api/launches from the same workers.dev URL.
-
-const ASSETS = {
-  "/": "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4KPGhlYWQ+CiAgPG1ldGEgY2hhcnNldD0idXRmLTgiPgogIDxtZXRhIG5hbWU9InZpZXdwb3J0IiBjb250ZW50PSJ3aWR0aD1kZXZpY2Utd2lkdGgsaW5pdGlhbC1zY2FsZT0xLHZpZXdwb3J0LWZpdD1jb3ZlciI+CiAgPHRpdGxlPk1lbWVTY2FubmVyIOKAlCBMaXZlIE1lbWVjb2luIExhdW5jaGVzPC90aXRsZT4KICA8bWV0YSBuYW1lPSJkZXNjcmlwdGlvbiIgY29udGVudD0iVHJhY2sgbmV3LCBib25kaW5nIGFuZCBncmFkdWF0ZWQgbWVtZWNvaW5zIGFjcm9zcyBsYXVuY2hwYWRzLiI+CiAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJzdHlsZXMuY3NzIj4KPC9oZWFkPgo8Ym9keT4KPGhlYWRlciBjbGFzcz0idG9wYmFyIj4KICA8ZGl2IGNsYXNzPSJicmFuZCI+CiAgICA8ZGl2IGNsYXNzPSJicmFuZC1tYXJrIj5NPHNwYW4+zp48L3NwYW4+PC9kaXY+CiAgICA8ZGl2PjxzdHJvbmc+TUVNRVNDQU5ORVI8L3N0cm9uZz48c21hbGw+LkZVTjwvc21hbGw+PC9kaXY+CiAgPC9kaXY+CiAgPGRpdiBjbGFzcz0ibGl2ZSI+PGk+PC9pPiBMSVZFPC9kaXY+CjwvaGVhZGVyPgoKPG1haW4+CiAgPHNlY3Rpb24gY2xhc3M9Imhlcm8gd3JhcCI+CiAgICA8ZGl2IGNsYXNzPSJleWVicm93Ij5TT0xBTkEgTUVNRUNPSU4gSU5URUxMSUdFTkNFPC9kaXY+CiAgICA8aDE+RmluZCBuZXcgY29pbnM8YnI+PHNwYW4+YmVmb3JlIHRoZXkgbW92ZS48L3NwYW4+PC9oMT4KICAgIDxwPldhdGNoIG5ldyBsYXVuY2hlcywgYm9uZGluZyBjdXJ2ZXMgYW5kIGdyYWR1YXRlZCBjb2lucyBpbiBvbmUgbGl2ZSBmZWVkLjwvcD4KICAgIDxkaXYgY2xhc3M9InNlYXJjaCI+CiAgICAgIDxpbnB1dCBpZD0ic2VhcmNoIiBwbGFjZWhvbGRlcj0iU2VhcmNoIHRpY2tlciwgdG9rZW4gb3IgY29udHJhY3QgYWRkcmVzc+KApiIgYXV0b2NvbXBsZXRlPSJvZmYiPgogICAgICA8YnV0dG9uIGlkPSJzZWFyY2hCdG4iPlNlYXJjaDwvYnV0dG9uPgogICAgPC9kaXY+CiAgPC9zZWN0aW9uPgoKICA8c2VjdGlvbiBjbGFzcz0id3JhcCBzdGF0cyI+CiAgICA8ZGl2PjxiIGlkPSJuZXdDb3VudCI+4oCUPC9iPjxzcGFuPk5ldyBsYXVuY2hlczwvc3Bhbj48L2Rpdj4KICAgIDxkaXY+PGIgaWQ9ImJvbmRDb3VudCI+4oCUPC9iPjxzcGFuPkJvbmRpbmc8L3NwYW4+PC9kaXY+CiAgICA8ZGl2PjxiIGlkPSJncmFkQ291bnQiPuKAlDwvYj48c3Bhbj5HcmFkdWF0ZWQ8L3NwYW4+PC9kaXY+CiAgICA8ZGl2PjxiIGlkPSJ1cGRhdGVkIj7igJQ8L2I+PHNwYW4+TGFzdCB1cGRhdGU8L3NwYW4+PC9kaXY+CiAgPC9zZWN0aW9uPgoKICA8c2VjdGlvbiBjbGFzcz0id3JhcCB0YWJzIj4KICAgIDxidXR0b24gY2xhc3M9InRhYiBhY3RpdmUiIGRhdGEtZmlsdGVyPSJhbGwiPkFsbDwvYnV0dG9uPgogICAgPGJ1dHRvbiBjbGFzcz0idGFiIiBkYXRhLWZpbHRlcj0ibmV3Ij5OZXc8L2J1dHRvbj4KICAgIDxidXR0b24gY2xhc3M9InRhYiIgZGF0YS1maWx0ZXI9ImJvbmRpbmciPkJvbmRpbmc8L2J1dHRvbj4KICAgIDxidXR0b24gY2xhc3M9InRhYiIgZGF0YS1maWx0ZXI9ImdyYWR1YXRlZCI+R3JhZHVhdGVkPC9idXR0b24+CiAgPC9zZWN0aW9uPgoKICA8c2VjdGlvbiBjbGFzcz0id3JhcCBmZWVkIiBpZD0iZmVlZCI+CiAgICA8ZGl2IGNsYXNzPSJzZWN0aW9uLWhlYWQiPgogICAgICA8ZGl2PjxoMj5MaXZlIGxhdW5jaGVzPC9oMj48c3BhbiBpZD0ic291cmNlIj5Db25uZWN0aW5nIHRvIHNjYW5uZXLigKY8L3NwYW4+PC9kaXY+CiAgICAgIDxidXR0b24gaWQ9InJlZnJlc2giIGNsYXNzPSJyZWZyZXNoIj7ihrsgUmVmcmVzaDwvYnV0dG9uPgogICAgPC9kaXY+CiAgICA8ZGl2IGlkPSJjYXJkcyIgY2xhc3M9ImNhcmRzIj48L2Rpdj4KICA8L3NlY3Rpb24+CjwvbWFpbj4KCjxmb290ZXIgY2xhc3M9IndyYXAgZm9vdGVyIj4KICA8ZGl2PjxzdHJvbmc+TUVNRVNDQU5ORVIuRlVOPC9zdHJvbmc+PHNwYW4+T24tY2hhaW4gaW5mb3JtYXRpb24gaW50ZXJmYWNlLiBWZXJpZnkgdG9rZW4gYWRkcmVzc2VzIGJlZm9yZSBhY3RpbmcuPC9zcGFuPjwvZGl2Pgo8L2Zvb3Rlcj4KCjxzY3JpcHQgc3JjPSJhcHAuanMiPjwvc2NyaXB0Pgo8L2JvZHk+CjwvaHRtbD4K",
-  "/index.html": "PCFkb2N0eXBlIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4KPGhlYWQ+CiAgPG1ldGEgY2hhcnNldD0idXRmLTgiPgogIDxtZXRhIG5hbWU9InZpZXdwb3J0IiBjb250ZW50PSJ3aWR0aD1kZXZpY2Utd2lkdGgsaW5pdGlhbC1zY2FsZT0xLHZpZXdwb3J0LWZpdD1jb3ZlciI+CiAgPHRpdGxlPk1lbWVTY2FubmVyIOKAlCBMaXZlIE1lbWVjb2luIExhdW5jaGVzPC90aXRsZT4KICA8bWV0YSBuYW1lPSJkZXNjcmlwdGlvbiIgY29udGVudD0iVHJhY2sgbmV3LCBib25kaW5nIGFuZCBncmFkdWF0ZWQgbWVtZWNvaW5zIGFjcm9zcyBsYXVuY2hwYWRzLiI+CiAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJzdHlsZXMuY3NzIj4KPC9oZWFkPgo8Ym9keT4KPGhlYWRlciBjbGFzcz0idG9wYmFyIj4KICA8ZGl2IGNsYXNzPSJicmFuZCI+CiAgICA8ZGl2IGNsYXNzPSJicmFuZC1tYXJrIj5NPHNwYW4+zp48L3NwYW4+PC9kaXY+CiAgICA8ZGl2PjxzdHJvbmc+TUVNRVNDQU5ORVI8L3N0cm9uZz48c21hbGw+LkZVTjwvc21hbGw+PC9kaXY+CiAgPC9kaXY+CiAgPGRpdiBjbGFzcz0ibGl2ZSI+PGk+PC9pPiBMSVZFPC9kaXY+CjwvaGVhZGVyPgoKPG1haW4+CiAgPHNlY3Rpb24gY2xhc3M9Imhlcm8gd3JhcCI+CiAgICA8ZGl2IGNsYXNzPSJleWVicm93Ij5TT0xBTkEgTUVNRUNPSU4gSU5URUxMSUdFTkNFPC9kaXY+CiAgICA8aDE+RmluZCBuZXcgY29pbnM8YnI+PHNwYW4+YmVmb3JlIHRoZXkgbW92ZS48L3NwYW4+PC9oMT4KICAgIDxwPldhdGNoIG5ldyBsYXVuY2hlcywgYm9uZGluZyBjdXJ2ZXMgYW5kIGdyYWR1YXRlZCBjb2lucyBpbiBvbmUgbGl2ZSBmZWVkLjwvcD4KICAgIDxkaXYgY2xhc3M9InNlYXJjaCI+CiAgICAgIDxpbnB1dCBpZD0ic2VhcmNoIiBwbGFjZWhvbGRlcj0iU2VhcmNoIHRpY2tlciwgdG9rZW4gb3IgY29udHJhY3QgYWRkcmVzc+KApiIgYXV0b2NvbXBsZXRlPSJvZmYiPgogICAgICA8YnV0dG9uIGlkPSJzZWFyY2hCdG4iPlNlYXJjaDwvYnV0dG9uPgogICAgPC9kaXY+CiAgPC9zZWN0aW9uPgoKICA8c2VjdGlvbiBjbGFzcz0id3JhcCBzdGF0cyI+CiAgICA8ZGl2PjxiIGlkPSJuZXdDb3VudCI+4oCUPC9iPjxzcGFuPk5ldyBsYXVuY2hlczwvc3Bhbj48L2Rpdj4KICAgIDxkaXY+PGIgaWQ9ImJvbmRDb3VudCI+4oCUPC9iPjxzcGFuPkJvbmRpbmc8L3NwYW4+PC9kaXY+CiAgICA8ZGl2PjxiIGlkPSJncmFkQ291bnQiPuKAlDwvYj48c3Bhbj5HcmFkdWF0ZWQ8L3NwYW4+PC9kaXY+CiAgICA8ZGl2PjxiIGlkPSJ1cGRhdGVkIj7igJQ8L2I+PHNwYW4+TGFzdCB1cGRhdGU8L3NwYW4+PC9kaXY+CiAgPC9zZWN0aW9uPgoKICA8c2VjdGlvbiBjbGFzcz0id3JhcCB0YWJzIj4KICAgIDxidXR0b24gY2xhc3M9InRhYiBhY3RpdmUiIGRhdGEtZmlsdGVyPSJhbGwiPkFsbDwvYnV0dG9uPgogICAgPGJ1dHRvbiBjbGFzcz0idGFiIiBkYXRhLWZpbHRlcj0ibmV3Ij5OZXc8L2J1dHRvbj4KICAgIDxidXR0b24gY2xhc3M9InRhYiIgZGF0YS1maWx0ZXI9ImJvbmRpbmciPkJvbmRpbmc8L2J1dHRvbj4KICAgIDxidXR0b24gY2xhc3M9InRhYiIgZGF0YS1maWx0ZXI9ImdyYWR1YXRlZCI+R3JhZHVhdGVkPC9idXR0b24+CiAgPC9zZWN0aW9uPgoKICA8c2VjdGlvbiBjbGFzcz0id3JhcCBmZWVkIiBpZD0iZmVlZCI+CiAgICA8ZGl2IGNsYXNzPSJzZWN0aW9uLWhlYWQiPgogICAgICA8ZGl2PjxoMj5MaXZlIGxhdW5jaGVzPC9oMj48c3BhbiBpZD0ic291cmNlIj5Db25uZWN0aW5nIHRvIHNjYW5uZXLigKY8L3NwYW4+PC9kaXY+CiAgICAgIDxidXR0b24gaWQ9InJlZnJlc2giIGNsYXNzPSJyZWZyZXNoIj7ihrsgUmVmcmVzaDwvYnV0dG9uPgogICAgPC9kaXY+CiAgICA8ZGl2IGlkPSJjYXJkcyIgY2xhc3M9ImNhcmRzIj48L2Rpdj4KICA8L3NlY3Rpb24+CjwvbWFpbj4KCjxmb290ZXIgY2xhc3M9IndyYXAgZm9vdGVyIj4KICA8ZGl2PjxzdHJvbmc+TUVNRVNDQU5ORVIuRlVOPC9zdHJvbmc+PHNwYW4+T24tY2hhaW4gaW5mb3JtYXRpb24gaW50ZXJmYWNlLiBWZXJpZnkgdG9rZW4gYWRkcmVzc2VzIGJlZm9yZSBhY3RpbmcuPC9zcGFuPjwvZGl2Pgo8L2Zvb3Rlcj4KCjxzY3JpcHQgc3JjPSJhcHAuanMiPjwvc2NyaXB0Pgo8L2JvZHk+CjwvaHRtbD4K",
-  "/styles.css": "OnJvb3R7CiAgLS1iZzojMDUwOTA3Oy0tcGFuZWw6IzBiMTIwZTstLXBhbmVsMjojMGUxNzEyOy0tbGluZTojMWIyYjIxOwogIC0tdGV4dDojZWZmN2YyOy0tbXV0ZWQ6IzgyOTE4ODstLWdyZWVuOiMzOWZmOGE7LS1ncmVlbjI6IzE3ZDc2YzsKICAtLXllbGxvdzojZmZkMTY2Oy0tYmx1ZTojNjZiN2ZmOy0tcmVkOiNmZjY0Nzg7Cn0KKntib3gtc2l6aW5nOmJvcmRlci1ib3h9Cmh0bWx7c2Nyb2xsLWJlaGF2aW9yOnNtb290aH0KYm9keXttYXJnaW46MDtiYWNrZ3JvdW5kOgogcmFkaWFsLWdyYWRpZW50KGNpcmNsZSBhdCA1MCUgLTEyJSxyZ2JhKDM3LDI1NSwxMjYsLjEyKSx0cmFuc3BhcmVudCAzNSUpLAogbGluZWFyLWdyYWRpZW50KCMwNTA5MDcsIzA3MGIwOSA0NSUsIzA1MDcwNik7Y29sb3I6dmFyKC0tdGV4dCk7CiBmb250LWZhbWlseTpJbnRlcix1aS1zYW5zLXNlcmlmLHN5c3RlbS11aSwtYXBwbGUtc3lzdGVtLFNlZ29lIFVJLFJvYm90byxBcmlhbCxzYW5zLXNlcmlmfQpidXR0b24saW5wdXR7Zm9udDppbmhlcml0fWJ1dHRvbntjdXJzb3I6cG9pbnRlcn0KLndyYXB7d2lkdGg6bWluKDExNjBweCxjYWxjKDEwMCUgLSAzMnB4KSk7bWFyZ2luOmF1dG99Ci50b3BiYXJ7aGVpZ2h0OjcycHg7Ym9yZGVyLWJvdHRvbToxcHggc29saWQgdmFyKC0tbGluZSk7YmFja2dyb3VuZDpyZ2JhKDUsOSw3LC44Nik7CiBiYWNrZHJvcC1maWx0ZXI6Ymx1cigxNnB4KTtkaXNwbGF5OmZsZXg7YWxpZ24taXRlbXM6Y2VudGVyO2p1c3RpZnktY29udGVudDpzcGFjZS1iZXR3ZWVuO3BhZGRpbmc6MCBtYXgoMTZweCxjYWxjKCgxMDAlIC0gMTE2MHB4KS8yKSk7cG9zaXRpb246c3RpY2t5O3RvcDowO3otaW5kZXg6MjB9Ci5icmFuZHtkaXNwbGF5OmZsZXg7YWxpZ24taXRlbXM6Y2VudGVyO2dhcDoxMHB4fS5icmFuZC1tYXJre3dpZHRoOjM4cHg7aGVpZ2h0OjM4cHg7Ym9yZGVyLXJhZGl1czoxMXB4OwogZGlzcGxheTpncmlkO3BsYWNlLWl0ZW1zOmNlbnRlcjtiYWNrZ3JvdW5kOmxpbmVhci1ncmFkaWVudCgxNDVkZWcsI2M3ZmZlMCwjMTdkNzZjKTtjb2xvcjojMDYxMDA5O2ZvbnQtd2VpZ2h0OjEwMDA7Zm9udC1zaXplOjIxcHg7CiBib3gtc2hhZG93OjAgMCAyOHB4IHJnYmEoNTcsMjU1LDEzOCwuMjUpfS5icmFuZC1tYXJrIHNwYW57Zm9udC1zaXplOjE1cHh9LmJyYW5kIHN0cm9uZ3tmb250LXNpemU6MTdweDtsZXR0ZXItc3BhY2luZzotLjVweH0uYnJhbmQgc21hbGx7Y29sb3I6dmFyKC0tZ3JlZW4pO2ZvbnQtc2l6ZToxN3B4O2ZvbnQtd2VpZ2h0OjkwMH0KLmxpdmV7Zm9udC1zaXplOjExcHg7Zm9udC13ZWlnaHQ6OTAwO2xldHRlci1zcGFjaW5nOjEuNHB4O2NvbG9yOnZhcigtLWdyZWVuKTtkaXNwbGF5OmZsZXg7YWxpZ24taXRlbXM6Y2VudGVyO2dhcDo3cHh9LmxpdmUgaXt3aWR0aDo3cHg7aGVpZ2h0OjdweDtib3JkZXItcmFkaXVzOjUwJTtiYWNrZ3JvdW5kOnZhcigtLWdyZWVuKTtib3gtc2hhZG93OjAgMCAxMnB4IHZhcigtLWdyZWVuKX0KLmhlcm97dGV4dC1hbGlnbjpjZW50ZXI7cGFkZGluZzo3OHB4IDAgNDRweH0uZXllYnJvd3tmb250LXNpemU6MTJweDtmb250LXdlaWdodDo5MDA7bGV0dGVyLXNwYWNpbmc6Mi41cHg7Y29sb3I6dmFyKC0tZ3JlZW4pO21hcmdpbi1ib3R0b206MTZweH0KaDF7Zm9udC1zaXplOmNsYW1wKDQ4cHgsOHZ3LDgycHgpO2xpbmUtaGVpZ2h0Oi45NDtsZXR0ZXItc3BhY2luZzotNHB4O21hcmdpbjowIDAgMjJweH1oMSBzcGFue2NvbG9yOnZhcigtLWdyZWVuKX0KLmhlcm8gcHttYXgtd2lkdGg6NjUwcHg7bWFyZ2luOmF1dG87Y29sb3I6dmFyKC0tbXV0ZWQpO2ZvbnQtc2l6ZToxN3B4O2xpbmUtaGVpZ2h0OjEuNn0KLnNlYXJjaHttYXgtd2lkdGg6ODAwcHg7bWFyZ2luOjMwcHggYXV0byAwO3BhZGRpbmc6N3B4O2JvcmRlcjoxcHggc29saWQgIzI2MzkyZTtiYWNrZ3JvdW5kOiMwOTEwMGM7Ym9yZGVyLXJhZGl1czoxNXB4O2Rpc3BsYXk6ZmxleDtib3gtc2hhZG93OjAgMjBweCA2MHB4IHJnYmEoMCwwLDAsLjI1KX0KLnNlYXJjaCBpbnB1dHttaW4td2lkdGg6MDtmbGV4OjE7YmFja2dyb3VuZDp0cmFuc3BhcmVudDtib3JkZXI6MDtvdXRsaW5lOjA7Y29sb3I6I2ZmZjtwYWRkaW5nOjE1cHg7Zm9udC1zaXplOjE1cHh9LnNlYXJjaCBpbnB1dDo6cGxhY2Vob2xkZXJ7Y29sb3I6IzYyNzA2Nn0KLnNlYXJjaCBidXR0b257Ym9yZGVyOjA7Ym9yZGVyLXJhZGl1czoxMHB4O2JhY2tncm91bmQ6dmFyKC0tZ3JlZW4pO2NvbG9yOiMwMzEwMDg7Zm9udC13ZWlnaHQ6OTUwO3BhZGRpbmc6MCAyNHB4fQouc3RhdHN7ZGlzcGxheTpncmlkO2dyaWQtdGVtcGxhdGUtY29sdW1uczpyZXBlYXQoNCwxZnIpO2dhcDoxMnB4O21hcmdpbi1ib3R0b206MjJweH0uc3RhdHM+ZGl2e2JhY2tncm91bmQ6cmdiYSgxMiwyMSwxNiwuOCk7Ym9yZGVyOjFweCBzb2xpZCB2YXIoLS1saW5lKTtib3JkZXItcmFkaXVzOjE0cHg7cGFkZGluZzoxOHB4fQouc3RhdHMgYntkaXNwbGF5OmJsb2NrO2ZvbnQtc2l6ZToyNXB4fS5zdGF0cyBzcGFue2Rpc3BsYXk6YmxvY2s7Y29sb3I6dmFyKC0tbXV0ZWQpO2ZvbnQtc2l6ZToxMXB4O21hcmdpbi10b3A6NXB4fQoudGFic3tkaXNwbGF5OmZsZXg7Z2FwOjhweDttYXJnaW4tYm90dG9tOjE4cHg7b3ZlcmZsb3c6YXV0b30udGFiLC5yZWZyZXNoe3doaXRlLXNwYWNlOm5vd3JhcDtib3JkZXI6MXB4IHNvbGlkIHZhcigtLWxpbmUpO2JhY2tncm91bmQ6IzBhMTEwZDtjb2xvcjojOTRhMzlhO2JvcmRlci1yYWRpdXM6MTBweDtwYWRkaW5nOjlweCAxNHB4O2ZvbnQtd2VpZ2h0OjgwMDtmb250LXNpemU6MTJweH0udGFiLmFjdGl2ZXtiYWNrZ3JvdW5kOnJnYmEoNTcsMjU1LDEzOCwuMTEpO2JvcmRlci1jb2xvcjpyZ2JhKDU3LDI1NSwxMzgsLjQ1KTtjb2xvcjp2YXIoLS1ncmVlbil9Ci5mZWVke2JhY2tncm91bmQ6cmdiYSg4LDE0LDEwLC43Nik7Ym9yZGVyOjFweCBzb2xpZCB2YXIoLS1saW5lKTtib3JkZXItcmFkaXVzOjE4cHg7b3ZlcmZsb3c6aGlkZGVufS5zZWN0aW9uLWhlYWR7cGFkZGluZzoxOXB4IDIwcHg7Ym9yZGVyLWJvdHRvbToxcHggc29saWQgdmFyKC0tbGluZSk7ZGlzcGxheTpmbGV4O2p1c3RpZnktY29udGVudDpzcGFjZS1iZXR3ZWVuO2FsaWduLWl0ZW1zOmNlbnRlcn0uc2VjdGlvbi1oZWFkIGgye2ZvbnQtc2l6ZToxOHB4O21hcmdpbjowfS5zZWN0aW9uLWhlYWQgc3BhbntkaXNwbGF5OmJsb2NrO2NvbG9yOnZhcigtLW11dGVkKTtmb250LXNpemU6MTFweDttYXJnaW4tdG9wOjRweH0KLmNhcmRze2Rpc3BsYXk6Z3JpZDtncmlkLXRlbXBsYXRlLWNvbHVtbnM6cmVwZWF0KDIsMWZyKTtnYXA6MXB4O2JhY2tncm91bmQ6dmFyKC0tbGluZSl9Ci5jYXJke2JhY2tncm91bmQ6dmFyKC0tcGFuZWwpO3BhZGRpbmc6MTdweDttaW4td2lkdGg6MH0uY2FyZDpob3ZlcntiYWNrZ3JvdW5kOnZhcigtLXBhbmVsMil9Ci5jYXJkLXRvcHtkaXNwbGF5OmZsZXg7anVzdGlmeS1jb250ZW50OnNwYWNlLWJldHdlZW47Z2FwOjEycHh9LnRva2Vue2Rpc3BsYXk6ZmxleDtnYXA6MTFweDttaW4td2lkdGg6MH0uYXZhdGFye3dpZHRoOjQycHg7aGVpZ2h0OjQycHg7ZmxleDowIDAgNDJweDtib3JkZXItcmFkaXVzOjEycHg7YmFja2dyb3VuZDpsaW5lYXItZ3JhZGllbnQoMTQ1ZGVnLCMxYTJjMjIsIzBlMTkxMyk7ZGlzcGxheTpncmlkO3BsYWNlLWl0ZW1zOmNlbnRlcjtjb2xvcjp2YXIoLS1ncmVlbik7Zm9udC13ZWlnaHQ6OTUwO2JvcmRlcjoxcHggc29saWQgIzI4NDMzNDtvdmVyZmxvdzpoaWRkZW59LmF2YXRhciBpbWd7d2lkdGg6MTAwJTtoZWlnaHQ6MTAwJTtvYmplY3QtZml0OmNvdmVyfS50b2tlbiBie2Rpc3BsYXk6YmxvY2s7Zm9udC1zaXplOjE0cHg7d2hpdGUtc3BhY2U6bm93cmFwO292ZXJmbG93OmhpZGRlbjt0ZXh0LW92ZXJmbG93OmVsbGlwc2lzfS50b2tlbiBzbWFsbHtkaXNwbGF5OmJsb2NrO2NvbG9yOnZhcigtLW11dGVkKTttYXJnaW4tdG9wOjNweDtmb250LXNpemU6MTFweH0uYmFkZ2V7Zm9udC1zaXplOjEwcHg7Zm9udC13ZWlnaHQ6OTAwO3BhZGRpbmc6NnB4IDhweDtib3JkZXItcmFkaXVzOjhweDtoZWlnaHQ6bWF4LWNvbnRlbnR9Lm5ld3tjb2xvcjp2YXIoLS1ncmVlbik7YmFja2dyb3VuZDpyZ2JhKDU3LDI1NSwxMzgsLjA5KX0uYm9uZGluZ3tjb2xvcjp2YXIoLS15ZWxsb3cpO2JhY2tncm91bmQ6cmdiYSgyNTUsMjA5LDEwMiwuMDkpfS5ncmFkdWF0ZWR7Y29sb3I6dmFyKC0tYmx1ZSk7YmFja2dyb3VuZDpyZ2JhKDEwMiwxODMsMjU1LC4wOSl9Ci5tZXRyaWNze2Rpc3BsYXk6Z3JpZDtncmlkLXRlbXBsYXRlLWNvbHVtbnM6cmVwZWF0KDMsMWZyKTtnYXA6OHB4O21hcmdpbi10b3A6MTVweH0ubWV0cmlje2JvcmRlcjoxcHggc29saWQgIzFiMmEyMTtiYWNrZ3JvdW5kOiMwOTEwMGM7Ym9yZGVyLXJhZGl1czoxMHB4O3BhZGRpbmc6MTBweH0ubWV0cmljIHNwYW57ZGlzcGxheTpibG9jaztjb2xvcjojNmU3ZDc0O2ZvbnQtc2l6ZTo5cHg7dGV4dC10cmFuc2Zvcm06dXBwZXJjYXNlO2xldHRlci1zcGFjaW5nOi43cHh9Lm1ldHJpYyBie2Rpc3BsYXk6YmxvY2s7bWFyZ2luLXRvcDo0cHg7Zm9udC1zaXplOjEycHh9Ci5wcm9ncmVzc3ttYXJnaW4tdG9wOjEycHh9LnByb2dyZXNzLWhlYWR7ZGlzcGxheTpmbGV4O2p1c3RpZnktY29udGVudDpzcGFjZS1iZXR3ZWVuO2NvbG9yOiM3MTgwNzc7Zm9udC1zaXplOjEwcHg7bWFyZ2luLWJvdHRvbTo2cHh9LmJhcntoZWlnaHQ6NXB4O2JvcmRlci1yYWRpdXM6MjBweDtiYWNrZ3JvdW5kOiMxNzIzMWI7b3ZlcmZsb3c6aGlkZGVufS5iYXIgaXtkaXNwbGF5OmJsb2NrO2hlaWdodDoxMDAlO2JhY2tncm91bmQ6dmFyKC0teWVsbG93KTtib3JkZXItcmFkaXVzOjIwcHh9Ci5jYXJkLWJvdHRvbXtkaXNwbGF5OmZsZXg7anVzdGlmeS1jb250ZW50OnNwYWNlLWJldHdlZW47YWxpZ24taXRlbXM6Y2VudGVyO21hcmdpbi10b3A6MTNweDtjb2xvcjojNjg3NjZkO2ZvbnQtc2l6ZToxMHB4fS5saW5rc3tkaXNwbGF5OmZsZXg7Z2FwOjhweH0ubGlua3MgYXtjb2xvcjojYWFiN2FmO3RleHQtZGVjb3JhdGlvbjpub25lfS5saW5rcyBhOmhvdmVye2NvbG9yOnZhcigtLWdyZWVuKX0KLmVtcHR5e2dyaWQtY29sdW1uOjEvLTE7cGFkZGluZzo1MHB4O3RleHQtYWxpZ246Y2VudGVyO2NvbG9yOnZhcigtLW11dGVkKX0uZm9vdGVye3BhZGRpbmc6MzVweCAwIDU1cHg7Y29sb3I6dmFyKC0tbXV0ZWQpO2ZvbnQtc2l6ZToxMHB4fS5mb290ZXIgZGl2e2Rpc3BsYXk6ZmxleDtqdXN0aWZ5LWNvbnRlbnQ6c3BhY2UtYmV0d2VlbjtnYXA6MjBweH0uZm9vdGVyIHN0cm9uZ3tjb2xvcjojZGJlNWRmfQpAbWVkaWEobWF4LXdpZHRoOjc2MHB4KXsuY2FyZHN7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOjFmcn0uc3RhdHN7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgyLDFmcil9Lmhlcm97cGFkZGluZzo1NnB4IDAgMzVweH1oMXtsZXR0ZXItc3BhY2luZzotMi43cHh9LmZvb3RlciBkaXZ7ZGlzcGxheTpibG9ja30uZm9vdGVyIHNwYW57ZGlzcGxheTpibG9jazttYXJnaW4tdG9wOjhweH19CgouY2Etcm93e2Rpc3BsYXk6ZmxleDthbGlnbi1pdGVtczpjZW50ZXI7Z2FwOjhweDttYXJnaW4tdG9wOjExcHg7cGFkZGluZzo5cHggMTBweDsKIGJvcmRlcjoxcHggc29saWQgIzFiMmEyMTtiYWNrZ3JvdW5kOiMwODBlMGE7Ym9yZGVyLXJhZGl1czo5cHg7bWluLXdpZHRoOjB9Ci5jYS1yb3cgc3Bhbntmb250LXNpemU6OXB4O2ZvbnQtd2VpZ2h0OjkwMDtsZXR0ZXItc3BhY2luZzouOHB4O2NvbG9yOiM2MTcwNjd9Ci5jYS1yb3cgY29kZXttaW4td2lkdGg6MDtmbGV4OjE7b3ZlcmZsb3c6aGlkZGVuO3RleHQtb3ZlcmZsb3c6ZWxsaXBzaXM7d2hpdGUtc3BhY2U6bm93cmFwOwogZm9udC1mYW1pbHk6dWktbW9ub3NwYWNlLFNGTW9uby1SZWd1bGFyLE1lbmxvLG1vbm9zcGFjZTtmb250LXNpemU6MTBweDtjb2xvcjojYjdjNWJjfQouY2Etcm93IGJ1dHRvbntib3JkZXI6MXB4IHNvbGlkICMyNjM4MmQ7YmFja2dyb3VuZDojMGQxNzExO2NvbG9yOiNhYWI4YjA7Ym9yZGVyLXJhZGl1czo3cHg7CiBwYWRkaW5nOjVweCA4cHg7Zm9udC1zaXplOjlweDtmb250LXdlaWdodDo4NTB9Ci5jYS1yb3cgYnV0dG9uOmhvdmVye2JvcmRlci1jb2xvcjpyZ2JhKDU3LDI1NSwxMzgsLjUpO2NvbG9yOnZhcigtLWdyZWVuKX0KCi5idXktcm93e2Rpc3BsYXk6Z3JpZDtncmlkLXRlbXBsYXRlLWNvbHVtbnM6MWZyIDFmcjtnYXA6OHB4O21hcmdpbi10b3A6MTJweH0KLmJ1eS1idG57ZGlzcGxheTpmbGV4O2p1c3RpZnktY29udGVudDpjZW50ZXI7YWxpZ24taXRlbXM6Y2VudGVyO3RleHQtZGVjb3JhdGlvbjpub25lO2JvcmRlci1yYWRpdXM6OXB4OwogcGFkZGluZzoxMHB4IDhweDtmb250LXNpemU6MTBweDtmb250LXdlaWdodDo5NTA7Ym9yZGVyOjFweCBzb2xpZCB0cmFuc3BhcmVudH0KLnB1bXAtYnV5e2JhY2tncm91bmQ6dmFyKC0tZ3JlZW4pO2NvbG9yOiMwMzEwMDh9Ci5wdW1wLWJ1eTpob3ZlcntmaWx0ZXI6YnJpZ2h0bmVzcygxLjA4KX0KLmZvbW8tYnV5e2JhY2tncm91bmQ6IzE3MTExZjtjb2xvcjojZmZmO2JvcmRlci1jb2xvcjojNGIzNTYyfQouZm9tby1idXk6aG92ZXJ7Ym9yZGVyLWNvbG9yOiM5ZjZiZDQ7YmFja2dyb3VuZDojMjExNzJifQpAbWVkaWEobWF4LXdpZHRoOjQzMHB4KXsuYnV5LXJvd3tncmlkLXRlbXBsYXRlLWNvbHVtbnM6MWZyfX0K",
-  "/app.js": "Y29uc3QgQVBJID0gd2luZG93Lk1FTUVTQ0FOTkVSX0FQSSB8fCAiL2FwaS9sYXVuY2hlcyI7CmxldCBzdGF0ZSA9IHsgaXRlbXM6IFtdLCBmaWx0ZXI6ICJhbGwiLCBxdWVyeTogIiIgfTsKCmNvbnN0ICQgPSAoaWQpID0+IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKGlkKTsKY29uc3QgZXNjID0gKHMpID0+IFN0cmluZyhzID8/ICIiKS5yZXBsYWNlKC9bJjw+IiddL2csIGMgPT4gKHsnJic6JyZhbXA7JywnPCc6JyZsdDsnLCc+JzonJmd0OycsJyInOicmcXVvdDsnLCInIjonJiMwMzk7J31bY10pKTsKY29uc3QgbW9uZXkgPSAobikgPT4gewogIG4gPSBOdW1iZXIobik7CiAgaWYgKCFOdW1iZXIuaXNGaW5pdGUobikpIHJldHVybiAi4oCUIjsKICBpZiAobiA+PSAxZTkpIHJldHVybiAiJCIrKG4vMWU5KS50b0ZpeGVkKDIpKyJCIjsKICBpZiAobiA+PSAxZTYpIHJldHVybiAiJCIrKG4vMWU2KS50b0ZpeGVkKDIpKyJNIjsKICBpZiAobiA+PSAxZTMpIHJldHVybiAiJCIrKG4vMWUzKS50b0ZpeGVkKDEpKyJLIjsKICByZXR1cm4gIiQiK24udG9GaXhlZChuIDwgMSA/IDQgOiAwKTsKfTsKY29uc3QgYWdlID0gKHRzKSA9PiB7CiAgY29uc3QgcyA9IE1hdGgubWF4KDAsIE1hdGguZmxvb3IoKERhdGUubm93KCktbmV3IERhdGUodHMpLmdldFRpbWUoKSkvMTAwMCkpOwogIGlmKHM8NjApIHJldHVybiBzKyJzIGFnbyI7IGlmKHM8MzYwMCkgcmV0dXJuIE1hdGguZmxvb3Iocy82MCkrIm0gYWdvIjsgaWYoczw4NjQwMCkgcmV0dXJuIE1hdGguZmxvb3Iocy8zNjAwKSsiaCBhZ28iOyByZXR1cm4gTWF0aC5mbG9vcihzLzg2NDAwKSsiZCBhZ28iOwp9Owpjb25zdCBzaG9ydCA9IChzKSA9PiBzID8gU3RyaW5nKHMpLnNsaWNlKDAsNSkrIuKApiIrU3RyaW5nKHMpLnNsaWNlKC00KSA6ICLigJQiOwoKZnVuY3Rpb24gcmVuZGVyKCkgewogIGNvbnN0IHEgPSBzdGF0ZS5xdWVyeS50b0xvd2VyQ2FzZSgpOwogIGNvbnN0IGl0ZW1zID0gc3RhdGUuaXRlbXMuZmlsdGVyKHggPT4KICAgIChzdGF0ZS5maWx0ZXIgPT09ICJhbGwiIHx8IHguc3RhdHVzID09PSBzdGF0ZS5maWx0ZXIpICYmCiAgICAoIXEgfHwgYCR7eC5uYW1lfSAke3guc3ltYm9sfSAke3guYWRkcmVzc30gJHt4LmxhdW5jaHBhZH1gLnRvTG93ZXJDYXNlKCkuaW5jbHVkZXMocSkpCiAgKTsKICAkKCJjYXJkcyIpLmlubmVySFRNTCA9IGl0ZW1zLmxlbmd0aCA/IGl0ZW1zLm1hcChjYXJkKS5qb2luKCIiKSA6CiAgICBgPGRpdiBjbGFzcz0iZW1wdHkiPk5vIGxhdW5jaGVzIG1hdGNoIHlvdXIgZmlsdGVyLjwvZGl2PmA7CiAgJCgibmV3Q291bnQiKS50ZXh0Q29udGVudCA9IHN0YXRlLml0ZW1zLmZpbHRlcih4PT54LnN0YXR1cz09PSJuZXciKS5sZW5ndGg7CiAgJCgiYm9uZENvdW50IikudGV4dENvbnRlbnQgPSBzdGF0ZS5pdGVtcy5maWx0ZXIoeD0+eC5zdGF0dXM9PT0iYm9uZGluZyIpLmxlbmd0aDsKICAkKCJncmFkQ291bnQiKS50ZXh0Q29udGVudCA9IHN0YXRlLml0ZW1zLmZpbHRlcih4PT54LnN0YXR1cz09PSJncmFkdWF0ZWQiKS5sZW5ndGg7CiAgJCgidXBkYXRlZCIpLnRleHRDb250ZW50ID0gbmV3IERhdGUoKS50b0xvY2FsZVRpbWVTdHJpbmcoW10sIHtob3VyOiIyLWRpZ2l0IixtaW51dGU6IjItZGlnaXQifSk7Cn0KCmFzeW5jIGZ1bmN0aW9uIGNvcHlDQShhZGRyZXNzLCBidXR0b24pIHsKICB0cnkgewogICAgYXdhaXQgbmF2aWdhdG9yLmNsaXBib2FyZC53cml0ZVRleHQoYWRkcmVzcyk7CiAgICBjb25zdCBvbGQgPSBidXR0b24udGV4dENvbnRlbnQ7CiAgICBidXR0b24udGV4dENvbnRlbnQgPSAiQ29waWVkIOKckyI7CiAgICBzZXRUaW1lb3V0KCgpID0+IGJ1dHRvbi50ZXh0Q29udGVudCA9IG9sZCwgMTIwMCk7CiAgfSBjYXRjaCAoXykgewogICAgd2luZG93LnByb21wdCgiQ29weSBjb250cmFjdCBhZGRyZXNzOiIsIGFkZHJlc3MpOwogIH0KfQoKZnVuY3Rpb24gYnV5QnV0dG9ucyh4KSB7CiAgaWYgKCF4LmFkZHJlc3MpIHJldHVybiAiIjsKICBjb25zdCBjaGFpbiA9IFN0cmluZyh4LmNoYWluIHx8ICJzb2xhbmEiKS50b0xvd2VyQ2FzZSgpOwogIGlmIChjaGFpbiAhPT0gInNvbGFuYSIpIHJldHVybiAiIjsKICBjb25zdCBjYSA9IGVuY29kZVVSSUNvbXBvbmVudCh4LmFkZHJlc3MpOwogIGNvbnN0IHB1bXBVcmwgPSBgaHR0cHM6Ly9wdW1wLmZ1bi9leHBsb3JlP291dHB1dEN1cnJlbmN5PSR7Y2F9YDsKICBjb25zdCBmb21vVXJsID0gYGh0dHBzOi8vZm9tby5mYW1pbHkvdG9rZW5zL3NvbGFuYS8ke2NhfWA7CiAgcmV0dXJuIGA8ZGl2IGNsYXNzPSJidXktcm93Ij4KICAgIDxhIGNsYXNzPSJidXktYnRuIHB1bXAtYnV5IiBocmVmPSIke3B1bXBVcmx9IiB0YXJnZXQ9Il9ibGFuayIgcmVsPSJub29wZW5lciBub3JlZmVycmVyIj5CdXkgb24gUHVtcC5mdW4g4oaXPC9hPgogICAgPGEgY2xhc3M9ImJ1eS1idG4gZm9tby1idXkiIGhyZWY9IiR7Zm9tb1VybH0iIHRhcmdldD0iX2JsYW5rIiByZWw9Im5vb3BlbmVyIG5vcmVmZXJyZXIiPkJ1eSBvbiBGT01PIOKGlzwvYT4KICA8L2Rpdj5gOwp9CgpmdW5jdGlvbiBjYXJkKHgpIHsKICBjb25zdCBwY3QgPSBNYXRoLm1heCgwLCBNYXRoLm1pbigxMDAsIE51bWJlcih4LmJvbmRpbmdQcm9ncmVzcyB8fCAwKSkpOwogIGNvbnN0IHN0YXR1c0xhYmVsID0geC5zdGF0dXMgPT09ICJuZXciID8gIk5FVyIgOiB4LnN0YXR1cyA9PT0gImJvbmRpbmciID8gIkJPTkRJTkciIDogIkdSQURVQVRFRCI7CiAgY29uc3QgZXhwbG9yZXIgPSB4LmNoYWluID09PSAic29sYW5hIiA/IGBodHRwczovL3NvbHNjYW4uaW8vdG9rZW4vJHtlbmNvZGVVUklDb21wb25lbnQoeC5hZGRyZXNzKX1gIDogIiMiOwogIGNvbnN0IGxhdW5jaCA9IHgubGF1bmNoVXJsIHx8ICIjIjsKICByZXR1cm4gYDxhcnRpY2xlIGNsYXNzPSJjYXJkIj4KICAgIDxkaXYgY2xhc3M9ImNhcmQtdG9wIj4KICAgICAgPGRpdiBjbGFzcz0idG9rZW4iPgogICAgICAgIDxkaXYgY2xhc3M9ImF2YXRhciI+JHt4LmltYWdlID8gYDxpbWcgc3JjPSIke2VzYyh4LmltYWdlKX0iIGFsdD0iIj5gIDogZXNjKCh4LnN5bWJvbHx8Ij8iKS5zbGljZSgwLDMpKX08L2Rpdj4KICAgICAgICA8ZGl2PjxiPiR7ZXNjKHgubmFtZSB8fCAiVW5rbm93biIpfTwvYj48c21hbGw+JCR7ZXNjKHguc3ltYm9sIHx8ICLigJQiKX0gwrcgJHtlc2MoeC5sYXVuY2hwYWQgfHwgIlVua25vd24iKX08L3NtYWxsPjwvZGl2PgogICAgICA8L2Rpdj4KICAgICAgPHNwYW4gY2xhc3M9ImJhZGdlICR7ZXNjKHguc3RhdHVzKX0iPiR7c3RhdHVzTGFiZWx9PC9zcGFuPgogICAgPC9kaXY+CiAgICA8ZGl2IGNsYXNzPSJjYS1yb3ciPgogICAgICA8c3Bhbj5DQTwvc3Bhbj4KICAgICAgPGNvZGUgdGl0bGU9IiR7ZXNjKHguYWRkcmVzcyB8fCAiIil9Ij4ke2VzYyhzaG9ydCh4LmFkZHJlc3MpKX08L2NvZGU+CiAgICAgICR7eC5hZGRyZXNzID8gYDxidXR0b24gb25jbGljaz0iY29weUNBKCR7SlNPTi5zdHJpbmdpZnkoeC5hZGRyZXNzKX0sIHRoaXMpIj5Db3B5PC9idXR0b24+YCA6ICIifQogICAgPC9kaXY+CiAgICA8ZGl2IGNsYXNzPSJtZXRyaWNzIj4KICAgICAgPGRpdiBjbGFzcz0ibWV0cmljIj48c3Bhbj5NYXJrZXQgY2FwPC9zcGFuPjxiPiR7bW9uZXkoeC5tYXJrZXRDYXApfTwvYj48L2Rpdj4KICAgICAgPGRpdiBjbGFzcz0ibWV0cmljIj48c3Bhbj5MaXF1aWRpdHk8L3NwYW4+PGI+JHttb25leSh4LmxpcXVpZGl0eSl9PC9iPjwvZGl2PgogICAgICA8ZGl2IGNsYXNzPSJtZXRyaWMiPjxzcGFuPlZvbHVtZTwvc3Bhbj48Yj4ke21vbmV5KHgudm9sdW1lMjRoKX08L2I+PC9kaXY+CiAgICA8L2Rpdj4KICAgICR7eC5zdGF0dXMgPT09ICJib25kaW5nIiA/IGA8ZGl2IGNsYXNzPSJwcm9ncmVzcyI+PGRpdiBjbGFzcz0icHJvZ3Jlc3MtaGVhZCI+PHNwYW4+Qm9uZGluZyBjdXJ2ZTwvc3Bhbj48Yj4ke3BjdC50b0ZpeGVkKDApfSU8L2I+PC9kaXY+PGRpdiBjbGFzcz0iYmFyIj48aSBzdHlsZT0id2lkdGg6JHtwY3R9JSI+PC9pPjwvZGl2PjwvZGl2PmAgOiAiIn0KICAgIDxkaXYgY2xhc3M9ImNhcmQtYm90dG9tIj4KICAgICAgPHNwYW4+JHthZ2UoeC5jcmVhdGVkQXQpfSDCtyAke2VzYyh4LmNoYWluIHx8ICJTb2xhbmEiKX08L3NwYW4+CiAgICAgIDxkaXYgY2xhc3M9ImxpbmtzIj4KICAgICAgICA8YSBocmVmPSIke2VzYyhleHBsb3Jlcil9IiB0YXJnZXQ9Il9ibGFuayIgcmVsPSJub3JlZmVycmVyIj5FeHBsb3JlciDihpc8L2E+CiAgICAgIDwvZGl2PgogICAgPC9kaXY+CiAgICAke2J1eUJ1dHRvbnMoeCl9CiAgPC9hcnRpY2xlPmA7Cn0KCmFzeW5jIGZ1bmN0aW9uIGxvYWQoKSB7CiAgdHJ5IHsKICAgIGNvbnN0IHIgPSBhd2FpdCBmZXRjaChBUEksIHtoZWFkZXJzOnthY2NlcHQ6ImFwcGxpY2F0aW9uL2pzb24ifX0pOwogICAgaWYgKCFyLm9rKSB0aHJvdyBuZXcgRXJyb3IoIkhUVFAgIityLnN0YXR1cyk7CiAgICBjb25zdCBkID0gYXdhaXQgci5qc29uKCk7CiAgICBzdGF0ZS5pdGVtcyA9IEFycmF5LmlzQXJyYXkoZC5pdGVtcykgPyBkLml0ZW1zIDogW107CiAgICAkKCJzb3VyY2UiKS50ZXh0Q29udGVudCA9IGQuc291cmNlID8gYFNvdXJjZTogJHtkLnNvdXJjZX1gIDogIkxpdmUgc2Nhbm5lciI7CiAgICByZW5kZXIoKTsKICB9IGNhdGNoKGUpIHsKICAgICQoInNvdXJjZSIpLnRleHRDb250ZW50ID0gIlNjYW5uZXIgb2ZmbGluZSDigJQgc2hvd2luZyBkZW1vIHN0cnVjdHVyZSI7CiAgICBzdGF0ZS5pdGVtcyA9IGRlbW9EYXRhKCk7CiAgICByZW5kZXIoKTsKICB9Cn0KCmZ1bmN0aW9uIGRlbW9EYXRhKCl7CiAgY29uc3Qgbm93ID0gRGF0ZS5ub3coKTsKICByZXR1cm4gWwogICAge25hbWU6IlBhcGVyIERvZyIsc3ltYm9sOiJQQVBFUiIsbGF1bmNocGFkOiJQdW1wLmZ1biIsY2hhaW46IlNvbGFuYSIsc3RhdHVzOiJuZXciLGNyZWF0ZWRBdDpuZXcgRGF0ZShub3ctMjIwMDApLnRvSVNPU3RyaW5nKCksbWFya2V0Q2FwOjgyMDAsbGlxdWlkaXR5OjQxMDAsdm9sdW1lMjRoOjEyODAwLGFkZHJlc3M6IkRlbW9BZGRyZXNzUGFwZXIifSwKICAgIHtuYW1lOiJNb29uIENhdCIsc3ltYm9sOiJNT09OQ0FUIixsYXVuY2hwYWQ6IlB1bXAuZnVuIixjaGFpbjoiU29sYW5hIixzdGF0dXM6ImJvbmRpbmciLGNyZWF0ZWRBdDpuZXcgRGF0ZShub3ctMjYwMDAwKS50b0lTT1N0cmluZygpLG1hcmtldENhcDozMTIwMCxsaXF1aWRpdHk6MTU2MDAsdm9sdW1lMjRoOjY4NDAwLGJvbmRpbmdQcm9ncmVzczo2MixhZGRyZXNzOiJEZW1vQWRkcmVzc01vb24ifSwKICAgIHtuYW1lOiJCb25rIEFwZSIsc3ltYm9sOiJCQVBFIixsYXVuY2hwYWQ6IkxldHNCT05LIixjaGFpbjoiU29sYW5hIixzdGF0dXM6ImJvbmRpbmciLGNyZWF0ZWRBdDpuZXcgRGF0ZShub3ctNzIwMDAwKS50b0lTT1N0cmluZygpLG1hcmtldENhcDoxODQwMCxsaXF1aWRpdHk6OTIwMCx2b2x1bWUyNGg6NDE3MDAsYm9uZGluZ1Byb2dyZXNzOjM4LGFkZHJlc3M6IkRlbW9BZGRyZXNzQXBlIn0sCiAgICB7bmFtZToiR3JhZHVhdGVkIERvZyIsc3ltYm9sOiJHRE9HIixsYXVuY2hwYWQ6IlB1bXAuZnVuIixjaGFpbjoiU29sYW5hIixzdGF0dXM6ImdyYWR1YXRlZCIsY3JlYXRlZEF0Om5ldyBEYXRlKG5vdy0zNjAwMDAwKS50b0lTT1N0cmluZygpLG1hcmtldENhcDoxODQwMDAsbGlxdWlkaXR5OjkyMDAwLHZvbHVtZTI0aDo1MzEwMDAsYWRkcmVzczoiRGVtb0FkZHJlc3NEb2cifQogIF07Cn0KCmRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoIi50YWIiKS5mb3JFYWNoKGIgPT4gYi5hZGRFdmVudExpc3RlbmVyKCJjbGljayIsICgpID0+IHsKICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCIudGFiIikuZm9yRWFjaCh4PT54LmNsYXNzTGlzdC5yZW1vdmUoImFjdGl2ZSIpKTsKICBiLmNsYXNzTGlzdC5hZGQoImFjdGl2ZSIpOyBzdGF0ZS5maWx0ZXI9Yi5kYXRhc2V0LmZpbHRlcjsgcmVuZGVyKCk7Cn0pKTsKJCgicmVmcmVzaCIpLmFkZEV2ZW50TGlzdGVuZXIoImNsaWNrIiwgbG9hZCk7CiQoInNlYXJjaEJ0biIpLmFkZEV2ZW50TGlzdGVuZXIoImNsaWNrIiwgKCk9PntzdGF0ZS5xdWVyeT0kKCJzZWFyY2giKS52YWx1ZS50cmltKCk7cmVuZGVyKCl9KTsKJCgic2VhcmNoIikuYWRkRXZlbnRMaXN0ZW5lcigia2V5ZG93biIsZT0+e2lmKGUua2V5PT09IkVudGVyIil7c3RhdGUucXVlcnk9ZS50YXJnZXQudmFsdWUudHJpbSgpO3JlbmRlcigpfX0pOwoKbG9hZCgpOwpzZXRJbnRlcnZhbChsb2FkLCAxNTAwMCk7Cg=="
-};
+// MemeScanner.FUN — Stage 1 live launch detector
+// Sources: Pump.fun on Solana + PONS V2 on Robinhood Chain.
+// Read-only: this worker never signs or submits transactions.
 
 const DEMO = [
-  {name:"Paper Dog",symbol:"PAPER",launchpad:"Pump.fun",chain:"Solana",status:"new",createdAt:new Date(Date.now()-22000).toISOString(),marketCap:8200,liquidity:4100,volume24h:12800,bondingProgress:0,address:"DemoAddressPaper111111111111111111111111111111"},
-  {name:"Moon Cat",symbol:"MOONCAT",launchpad:"Pump.fun",chain:"Solana",status:"bonding",createdAt:new Date(Date.now()-260000).toISOString(),marketCap:31200,liquidity:15600,volume24h:68400,bondingProgress:62,address:"DemoAddressMoon22222222222222222222222222222"},
-  {name:"Bonk Ape",symbol:"BAPE",launchpad:"LetsBONK",chain:"Solana",status:"bonding",createdAt:new Date(Date.now()-720000).toISOString(),marketCap:18400,liquidity:9200,volume24h:41700,bondingProgress:38,address:"DemoAddressApe333333333333333333333333333333"},
-  {name:"Graduated Dog",symbol:"GDOG",launchpad:"Pump.fun",chain:"Solana",status:"graduated",createdAt:new Date(Date.now()-3600000).toISOString(),marketCap:184000,liquidity:92000,volume24h:531000,bondingProgress:100,address:"DemoAddressDog44444444444444444444444444444"}
+  {name:"Paper Dog",symbol:"PAPER",launchpad:"Pump.fun",chain:"Solana",status:"new",createdAt:new Date(Date.now()-22000).toISOString(),marketCap:8200,liquidity:4100,volume24h:12800,bondingProgress:0,address:"DemoAddressPaper"},
+  {name:"Moon Cat",symbol:"MOONCAT",launchpad:"Pump.fun",chain:"Solana",status:"bonding",createdAt:new Date(Date.now()-260000).toISOString(),marketCap:31200,liquidity:15600,volume24h:68400,bondingProgress:62,address:"DemoAddressMoon"},
+  {name:"PONS Demo",symbol:"PONS",launchpad:"PONS",chain:"Robinhood Chain",status:"bonding",createdAt:new Date(Date.now()-360000).toISOString(),marketCap:null,liquidity:null,volume24h:null,bondingProgress:12,address:"0x0000000000000000000000000000000000000000"}
 ];
 
-function response(body, contentType="text/html; charset=UTF-8", status=200){
-  return new Response(body,{status,headers:{"content-type":contentType,"cache-control":"no-store","access-control-allow-origin":"*"}});
-}
-function asset(path, type){
-  const raw = ASSETS[path];
-  if(!raw) return new Response("Not found",{status:404});
-  const bytes = Uint8Array.from(atob(raw), c=>c.charCodeAt(0));
-  return response(bytes,type);
+const PUMP_PROGRAM = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
+const PUMP_CREATE_EVENT = [27,114,169,77,222,235,99,118];
+const PUMP_CURVE_ACCOUNT_DISCRIMINATOR = [23,183,248,55,96,216,172,96];
+const SOLANA_RPC_DEFAULT = "https://api.mainnet-beta.solana.com";
+
+const PONS_FACTORY = "0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e";
+const PONS_TOKEN_LAUNCHED = "0x8d4aad4953d0ca700d468f3753aa14432d1b35b43ec6409f051fb6aa43a89607";
+const PONS_POOL_GRADUATED = "0x0a44ef75df69c534f43cd6c1aa3ef8983065fe5fe79ef9e79f6494e6f258c259";
+const ROBINHOOD_RPC_DEFAULT = "https://rpc.mainnet.chain.robinhood.com/";
+const ERC20_NAME = "0x06fdde03";
+const ERC20_SYMBOL = "0x95d89b41";
+
+function json(data,status=200){
+  return new Response(JSON.stringify(data),{status,headers:{
+    "content-type":"application/json; charset=UTF-8",
+    "cache-control":"no-store",
+    "access-control-allow-origin":"*"
+  }});
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if(request.method === "OPTIONS") return response(JSON.stringify({ok:true}),"application/json; charset=UTF-8");
-
-    if(url.pathname === "/api/launches") {
-      const items = await getLaunches(env);
-      return response(JSON.stringify({source: items === DEMO ? "demo" : "live", updatedAt:new Date().toISOString(), items}),"application/json; charset=UTF-8");
+    if (request.method === "OPTIONS") return json({ok:true});
+    if (url.pathname === "/health") return json({ok:true,service:"memescanner-stage1",sources:["Pump.fun","PONS"],time:new Date().toISOString()});
+    if (url.pathname === "/api/launches") {
+      const result = await scanAll(env || {});
+      return json(result);
     }
-
-    if(url.pathname === "/health") return response(JSON.stringify({ok:true,service:"memescanner",time:new Date().toISOString()}),"application/json; charset=UTF-8");
-
-    if(url.pathname === "/" || url.pathname === "/index.html") return asset(url.pathname,"text/html; charset=UTF-8");
-    if(url.pathname === "/styles.css") return asset(url.pathname,"text/css; charset=UTF-8");
-    if(url.pathname === "/app.js") return asset(url.pathname,"application/javascript; charset=UTF-8");
-
-    return asset("/index.html","text/html; charset=UTF-8");
+    if (env && env.ASSETS) return env.ASSETS.fetch(request);
+    return new Response("MemeScanner Stage 1",{status:200,headers:{"content-type":"text/plain"}});
   }
 };
 
-async function getLaunches(env){
-  // Optional: set LAUNCH_INDEXER_URL later to a JSON endpoint returning {items:[...]}
-  // so the same worker can switch from demo data to a live scanner feed.
-  if(env && env.LAUNCH_INDEXER_URL){
-    try{
-      const r=await fetch(env.LAUNCH_INDEXER_URL,{headers:{accept:"application/json"}});
-      if(r.ok){
-        const d=await r.json();
-        if(Array.isArray(d.items)) return d.items;
-      }
-    }catch(_){}
+async function scanAll(env){
+  const [pump, pons] = await Promise.allSettled([scanPump(env), scanPons(env)]);
+  const items = [];
+  const errors = [];
+  if (pump.status === "fulfilled") items.push(...pump.value.items);
+  else errors.push("pump:" + String(pump.reason?.message || pump.reason));
+  if (pons.status === "fulfilled") items.push(...pons.value.items);
+  else errors.push("pons:" + String(pons.reason?.message || pons.reason));
+
+  const dedup = new Map();
+  for (const item of items) {
+    const key = `${item.chain}:${String(item.address).toLowerCase()}`;
+    if (!dedup.has(key) || new Date(item.createdAt) > new Date(dedup.get(key).createdAt)) dedup.set(key,item);
   }
-  return DEMO;
+  const merged = [...dedup.values()].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,100);
+
+  return {
+    source: merged.length ? "live" : "demo",
+    stage: 1,
+    updatedAt: new Date().toISOString(),
+    sources: {pumpFun: pump.status === "fulfilled", pons: pons.status === "fulfilled"},
+    errors,
+    items: merged.length ? merged : DEMO
+  };
 }
+
+async function scanPump(env){
+  const rpc = env.SOLANA_RPC_URL || SOLANA_RPC_DEFAULT;
+  const sigs = await solana(rpc,"getSignaturesForAddress",[PUMP_PROGRAM,{limit:Number(env.PUMP_TX_LIMIT||80)}]);
+  const recent = (sigs || []).filter(x=>!x.err).slice(0,Number(env.PUMP_TX_LIMIT||80));
+  if (!recent.length) return {items:[]};
+
+  const batch = recent.map((s,i)=>({jsonrpc:"2.0",id:i+1,method:"getTransaction",params:[s.signature,{encoding:"jsonParsed",commitment:"confirmed",maxSupportedTransactionVersion:0}]}));
+  const txs = await solanaBatch(rpc,batch);
+  const launches = [];
+
+  for (let i=0;i<txs.length;i++) {
+    const tx = txs[i];
+    const logs = tx?.result?.meta?.logMessages || [];
+    const create = logs.some(line=>line.includes("Instruction: Create") || line.includes("Instruction: CreateV2"));
+    if (!create) continue;
+
+    const event = (logs.filter(line=>line.startsWith("Program data: ")).map(x=>x.slice("Program data: ".length)).map(decodePumpCreateEvent).find(Boolean));
+    if (!event) continue;
+    const blockTime = tx.result.blockTime ? tx.result.blockTime*1000 : Date.now();
+    const curve = event.bondingCurve;
+    let status = "new";
+    let progress = 0;
+    if (curve) {
+      try {
+        const acc = await solana(rpc,"getAccountInfo",[curve,{encoding:"base64"}]);
+        const state = parsePumpCurve(acc?.value?.data?.[0]);
+        if (state) {
+          status = state.complete ? "graduated" : "bonding";
+          progress = state.complete ? 100 : pumpProgress(state);
+        }
+      } catch (_) {}
+    }
+
+    launches.push({
+      name:event.name,
+      symbol:event.symbol,
+      launchpad:"Pump.fun",
+      chain:"Solana",
+      status,
+      createdAt:new Date(blockTime).toISOString(),
+      marketCap:null,
+      liquidity:null,
+      volume24h:null,
+      bondingProgress:progress,
+      address:event.mint,
+      creator:event.creator,
+      txHash:recent[i]?.signature || null,
+      launchUrl:`https://pump.fun/coin/${encodeURIComponent(event.mint)}`
+    });
+  }
+  return {items:uniqueNewest(launches)};
+}
+
+function decodePumpCreateEvent(b64){
+  try {
+    const bytes = Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    if (bytes.length < 8 || !sameBytes(bytes.slice(0,8),PUMP_CREATE_EVENT)) return null;
+    let o=8;
+    const a=readString(bytes,o); if(!a) return null; o=a.next;
+    const b=readString(bytes,o); if(!b) return null; o=b.next;
+    const c=readString(bytes,o); if(!c) return null; o=c.next;
+    const mint=base58(bytes.slice(o,o+32)); o+=32;
+    const bondingCurve=base58(bytes.slice(o,o+32)); o+=32;
+    const user=base58(bytes.slice(o,o+32)); o+=32;
+    const creator=base58(bytes.slice(o,o+32)); o+=32;
+    if(o+8>bytes.length) return null;
+    const timestamp=readI64LE(bytes,o); o+=8;
+    return {name:a.value,symbol:b.value,uri:c.value,mint,bondingCurve,user,creator,timestamp};
+  } catch (_) { return null; }
+}
+
+function parsePumpCurve(b64){
+  try {
+    const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    if(bytes.length < 8+8*5+1) return null;
+    if(!sameBytes(bytes.slice(0,8),PUMP_CURVE_ACCOUNT_DISCRIMINATOR)) return null;
+    let o=8;
+    const virtualToken=readU64LE(bytes,o);o+=8;
+    const virtualQuote=readU64LE(bytes,o);o+=8;
+    const realToken=readU64LE(bytes,o);o+=8;
+    const realQuote=readU64LE(bytes,o);o+=8;
+    const totalSupply=readU64LE(bytes,o);o+=8;
+    const complete=bytes[o]!==0;
+    return {virtualToken,virtualQuote,realToken,realQuote,totalSupply,complete};
+  } catch (_) { return null; }
+}
+
+function pumpProgress(s){
+  // Pump's curve state exposes real token reserves. Depletion of the initial
+  // real-token reserve is a useful on-chain progress approximation.
+  const initialReal = 793100000000000n;
+  const real = BigInt(s.realToken);
+  if(real <= 0n) return 100;
+  const p = Number((initialReal-real)*100000n/initialReal)/1000;
+  return Math.max(0,Math.min(99.9,p));
+}
+
+async function scanPons(env){
+  const rpc=env.ROBINHOOD_RPC_URL || ROBINHOOD_RPC_DEFAULT;
+  const latestHex=await evm(rpc,"eth_blockNumber",[]);
+  const latest=parseInt(latestHex,16);
+  const lookback=Math.min(Number(env.PONS_LOOKBACK_BLOCKS||3000),10000);
+  const from=Math.max(0,latest-lookback);
+  const [launchLogs,gradLogs]=await Promise.all([
+    getLogsChunked(rpc,PONS_FACTORY,PONS_TOKEN_LAUNCHED,from,latest),
+    getLogsChunked(rpc,PONS_FACTORY,PONS_POOL_GRADUATED,from,latest)
+  ]);
+
+  const graduated=new Set();
+  for(const log of gradLogs) if(log.topics?.[1]) graduated.add(topicAddress(log.topics[1]));
+
+  const launches=launchLogs.map(parsePonsLaunch).filter(Boolean);
+  const tokens=uniqueNewest(launches);
+  const meta=await ponsMetadata(rpc,tokens.map(x=>x.address));
+  for(const x of tokens){
+    const m=meta.get(x.address.toLowerCase());
+    if(m?.name) x.name=m.name;
+    if(m?.symbol) x.symbol=m.symbol;
+    if(graduated.has(x.address.toLowerCase())) {x.status="graduated";x.bondingProgress=100;}
+    else {x.status="bonding";x.bondingProgress=0;}
+  }
+  return {items:tokens};
+}
+
+async function getLogsChunked(rpc,address,topic,from,to){
+  const out=[];
+  const chunk=Number(500);
+  for(let a=from;a<=to;a+=chunk){
+    const b=Math.min(to,a+chunk-1);
+    try{
+      const logs=await evm(rpc,"eth_getLogs",[{address,fromBlock:"0x"+a.toString(16),toBlock:"0x"+b.toString(16),topics:[topic]}]);
+      if(Array.isArray(logs)) out.push(...logs);
+    }catch(_){ }
+  }
+  return out;
+}
+
+function parsePonsLaunch(log){
+  if(!log?.topics?.[1]) return null;
+  const token=topicAddress(log.topics[1]);
+  const deployer=log.topics?.[3] ? topicAddress(log.topics[3]) : null;
+  const data=(log.data||"").replace(/^0x/,"").padEnd(192,"0");
+  const threshold=BigInt("0x"+data.slice(128,192));
+  return {
+    name:"Loading…",
+    symbol:"PONS",
+    launchpad:"PONS",
+    chain:"Robinhood Chain",
+    status:"bonding",
+    createdAt:new Date().toISOString(),
+    marketCap:null,
+    liquidity:null,
+    volume24h:null,
+    bondingProgress:0,
+    address:token,
+    creator:deployer,
+    txHash:log.transactionHash,
+    blockNumber:parseInt(log.blockNumber,16),
+    graduationThreshold:threshold.toString(),
+    launchUrl:`https://ponsfamily.com/token/${token}`
+  };
+}
+
+async function ponsMetadata(rpc,addresses){
+  const map=new Map();
+  const calls=[];
+  let id=1;
+  for(const address of addresses){
+    const a=address.slice(2).padStart(64,"0");
+    calls.push({jsonrpc:"2.0",id:id++,method:"eth_call",params:[{to:address,data:ERC20_NAME+ a},"latest"]});
+    calls.push({jsonrpc:"2.0",id:id++,method:"eth_call",params:[{to:address,data:ERC20_SYMBOL+ a},"latest"]});
+  }
+  // name/symbol are zero-argument functions; the padded address above is not
+  // part of the call. Correct the calldata before sending.
+  for(const c of calls) c.params[0].data=c.params[0].data.slice(0,10);
+  const results=await evmBatch(rpc,calls);
+  for(let i=0;i<addresses.length;i++){
+    const name=decodeAbiString(results[i*2]?.result);
+    const symbol=decodeAbiString(results[i*2+1]?.result);
+    map.set(addresses[i].toLowerCase(),{name,symbol});
+  }
+  return map;
+}
+
+function decodeAbiString(hex){
+  if(!hex || hex==="0x") return null;
+  try{
+    const h=hex.slice(2);
+    let offset=parseInt(h.slice(0,64),16);
+    if(offset+64>h.length) return null;
+    const len=parseInt(h.slice(offset,offset+64),16);
+    const raw=h.slice(offset+64,offset+64+len*2);
+    return new TextDecoder().decode(Uint8Array.from(raw.match(/../g)||[],x=>parseInt(x,16))).replace(/\u0000/g,"").trim();
+  }catch(_){return null;}
+}
+
+async function solana(rpc,method,params){
+  const r=await fetch(rpc,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:1,method,params})});
+  if(!r.ok) throw new Error(`Solana RPC ${r.status}`);
+  const d=await r.json();
+  if(d.error) throw new Error(d.error.message||"Solana RPC error");
+  return d.result;
+}
+async function solanaBatch(rpc,requests){
+  const r=await fetch(rpc,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(requests)});
+  if(!r.ok) throw new Error(`Solana RPC ${r.status}`);
+  const d=await r.json();
+  return requests.map(q=>d.find(x=>x.id===q.id)||null);
+}
+async function evm(rpc,method,params){
+  const r=await fetch(rpc,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:1,method,params})});
+  if(!r.ok) throw new Error(`EVM RPC ${r.status}`);
+  const d=await r.json();
+  if(d.error) throw new Error(d.error.message||"EVM RPC error");
+  return d.result;
+}
+async function evmBatch(rpc,requests){
+  const r=await fetch(rpc,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(requests)});
+  if(!r.ok) throw new Error(`EVM RPC ${r.status}`);
+  const d=await r.json();
+  return requests.map(q=>d.find(x=>x.id===q.id)||{});
+}
+
+function readString(bytes,o){
+  if(o+4>bytes.length) return null;
+  const len=readU32LE(bytes,o);o+=4;
+  if(o+len>bytes.length) return null;
+  return {value:new TextDecoder().decode(bytes.slice(o,o+len)),next:o+len};
+}
+function readU32LE(b,o){return (b[o]|(b[o+1]<<8)|(b[o+2]<<16)|(b[o+3]<<24))>>>0;}
+function readU64LE(b,o){let n=0n;for(let i=7;i>=0;i--)n=(n<<8n)+BigInt(b[o+i]);return n;}
+function readI64LE(b,o){let n=readU64LE(b,o);return n>0x7fffffffffffffffn?n-0x10000000000000000n:n;}
+function sameBytes(a,b){if(a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true;}
+function base58(bytes){const alphabet="123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";let digits=[0];for(const byte of bytes){let carry=byte;for(let j=0;j<digits.length;j++){const v=digits[j]*256+carry;digits[j]=v%58;carry=Math.floor(v/58);}while(carry){digits.push(carry%58);carry=Math.floor(carry/58);}}let out="";for(const byte of bytes){if(byte!==0)break;out+="1";}for(let i=digits.length-1;i>=0;i--)out+=alphabet[digits[i]];return out;}
+function topicAddress(topic){return "0x"+topic.slice(-40).toLowerCase();}
+function uniqueNewest(items){const m=new Map();for(const x of items){const k=String(x.address).toLowerCase();if(!m.has(k)||new Date(x.createdAt)>new Date(m.get(k).createdAt))m.set(k,x);}return [...m.values()].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));}

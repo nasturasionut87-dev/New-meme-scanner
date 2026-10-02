@@ -1,4 +1,4 @@
-const API = window.MEMESCANNER_API || "/api/launches";
+const API = window.MEMESCANNER_API || "https://sionut87.workers.dev/api/launches";
 let state = { items: [], filter: "all", query: "" };
 
 const $ = (id) => document.getElementById(id);

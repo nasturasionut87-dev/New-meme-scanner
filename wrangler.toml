@@ -1,0 +1,12 @@
+name = "sionut87"
+main = "worker.js"
+compatibility_date = "2026-10-02"
+workers_dev = true
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[vars]
+PUMP_TX_LIMIT = "80"
+PONS_LOOKBACK_BLOCKS = "3000"
